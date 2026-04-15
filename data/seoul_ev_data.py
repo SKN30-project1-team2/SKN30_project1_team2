@@ -72,7 +72,8 @@ def get_load_faq_data():
     """3. FAQ 데이터 로드"""
     file_list = glob.glob(get_data_path("data_faq/*.csv"))
     df_list = []
-    
+    # df_faq = pd.read_csv(get_data_path("data_set_faq.csv"))
+
     for file in file_list:
         # FAQ 관련 파일만 로드 (가정: 파일명에 faq가 포함되거나, 컬럼에 question이 있는 경우)
         if "faq" not in file.lower() and "질문" not in file:

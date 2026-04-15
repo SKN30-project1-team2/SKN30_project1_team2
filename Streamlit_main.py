@@ -170,30 +170,84 @@ df        = load_data()
 df_charge = load_charging()
 district_df = pd.read_csv("data/data_set_seoul_districts.csv")
 # ─────────────────────────────────────────────────────────────────────────────
-# PAGE 1 : INFO
+# PAGE 1 : INFO (메인 소개 화면)
 # ─────────────────────────────────────────────────────────────────────────────
-
 if selected_page == "🏠 EV Seoul 소개 (INFO)":
+    
+   # 1. INFO 페이지 전용 추가 CSS
+    st.markdown("""
+    <style>
+    .hero-container { text-align: center; padding: 60px 20px 40px 20px; }
+    .hero-badge { display: inline-block; padding: 6px 16px; background: rgba(0, 229, 255, 0.1); border: 1px solid rgba(0, 229, 255, 0.2); border-radius: 100px; color: #00e5ff; font-size: 13px; font-weight: 700; margin-bottom: 24px; letter-spacing: 1px; }
+    .hero-title { font-family: 'Space Grotesk', sans-serif; font-size: 3.5rem; font-weight: 900; margin-bottom: 20px; line-height: 1.2; color: var(--text); }
+    .hero-title span { background: linear-gradient(90deg, #10b981 0%, #00e5ff 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    
+    /* 서브타이틀 가독성 & 중앙정렬 완벽 개선 */
+    .hero-subtitle { 
+        font-size: 1.15rem; 
+        color: #475569; /* 기존보다 약간 더 또렷한 색상 */
+        font-weight: 500; 
+        max-width: 650px; 
+        margin: 0 auto; 
+        line-height: 1.7; 
+        text-align: center; /* 확실한 중앙 정렬 */
+        word-break: keep-all; /* 단어가 중간에 잘리지 않고 깔끔하게 줄바꿈됨 */
+    }
+    
+    /* 퀵 스탯 배너 */
+    .quick-stats-container { display: flex; justify-content: center; gap: 40px; margin-bottom: 60px; }
+    .quick-stat-item { text-align: center; }
+    .quick-stat-num { font-family: 'Space Grotesk', sans-serif; font-size: 2.5rem; font-weight: 900; color: #2563eb; }
+    .quick-stat-label { font-size: 14px; font-weight: 600; color: var(--muted); }
+
+    /* 기능 카드 */
+    .feature-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px 24px; text-align: center; transition: all 0.3s ease; height: 100%; display: flex; flex-direction: column; align-items: center; box-shadow: var(--shadow); margin-bottom: 15px; }
+    .feature-card:hover { transform: translateY(-5px); border-color: #3b82f6; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.1); }
+    .feature-icon { font-size: 40px; margin-bottom: 16px; background: #f1f5f9; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+    .feature-title { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 12px; }
+    .feature-desc { font-size: 14px; color: var(--muted); line-height: 1.6; word-break: keep-all; flex-grow: 1; }
+    
+    /* 기능 이동 버튼 커스텀 */
+    div.stButton > button.nav-btn { background: #eff6ff !important; color: #2563eb !important; border: 1px solid #bfdbfe !important; width: 100%; height: 45px; border-radius: 12px !important; font-size: 15px; transition: all 0.2s; }
+    div.stButton > button.nav-btn:hover { background: #2563eb !important; color: #ffffff !important; border-color: #2563eb !important; }
+    </style>
+    """, unsafe_allow_html=True)
+
     st.markdown('<div class="page-content">', unsafe_allow_html=True)
     
-    # 히어로 섹션
+    # 2. 히어로 섹션
     st.markdown("""
-    <div style="text-align: center; padding: 60px 20px 80px 20px;">
-        <div style="display: inline-block; padding: 6px 16px; background: rgba(0, 229, 255, 0.1); border: 1px solid rgba(0, 229, 255, 0.2); border-radius: 100px; color: #00e5ff; font-size: 13px; font-weight: 700; margin-bottom: 24px; letter-spacing: 1px;">
-            SMART MOBILITY CITY
-        </div>
-        <h1 style="font-family: 'Space Grotesk', sans-serif; font-size: 4rem; font-weight: 900; margin-bottom: 20px; line-height: 1.2;">
-            미래를 향한 푸른 발걸음<br>
-            <span style="background: linear-gradient(90deg, #10b981 0%, #00e5ff 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">EV Seoul</span>과 함께
-        </h1>
-        <p style="font-size: 1.2rem; color: #94a3b8; font-weight: 400; max-width: 600px; margin: 0 auto; line-height: 1.6;">
+    <div class="hero-container">
+        <div class="hero-badge">SMART MOBILITY CITY</div>
+        <h1 class="hero-title">미래를 향한 푸른 발걸음<br><span>EV Seoul</span>과 함께</h1>
+        <p class="hero-subtitle">
             서울특별시의 전기차 보급 현황과 충전소 인프라를 한눈에 파악하세요.<br>
             시민들을 위한 편리하고 스마트한 데이터 통합 플랫폼입니다.
         </p>
     </div>
     """, unsafe_allow_html=True)
 
-    # 기능 카드 섹션 (3열)
+    # 3. [신규] 라이브 퀵 스탯 (데이터에서 실시간 추출)
+    # 가장 최신 년도의 전기차 등록 대수 합계 구하기
+    latest_year = sorted(df["기준년도"].unique())[-1]
+    total_evs = int(df[df["기준년도"] == latest_year]["등록대수"].sum())
+    total_stations = len(df_charge)
+
+    st.markdown(f"""
+    <div class="quick-stats-container">
+        <div class="quick-stat-item">
+            <div class="quick-stat-num">{total_evs:,}<span style="font-size:1.2rem;color:#94a3b8;">대</span></div>
+            <div class="quick-stat-label">서울시 누적 전기차 ({latest_year} 기준)</div>
+        </div>
+        <div style="width: 1px; background-color: var(--border); height: 60px; margin-top: 10px;"></div>
+        <div class="quick-stat-item">
+            <div class="quick-stat-num">{total_stations:,}<span style="font-size:1.2rem;color:#94a3b8;">개소</span></div>
+            <div class="quick-stat-label">서울시 전체 전기차 충전소</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # 4. 기능 카드 섹션 (HTML 레이아웃 + Streamlit 버튼 결합)
     c1, c2, c3 = st.columns(3)
     
     with c1:
@@ -202,11 +256,14 @@ if selected_page == "🏠 EV Seoul 소개 (INFO)":
             <div class="feature-icon">📊</div>
             <div class="feature-title">현황 대시보드</div>
             <div class="feature-desc">
-                서울시 25개 자치구별 전기자동차 등록 대수 및 차종별 분포를 
-                다양한 필터와 지도 시각화를 통해 직관적으로 분석합니다.
+                서울시 25개 자치구별 전기자동차 등록 현황 및 연도별 추이를 직관적인 데이터 시각화로 분석합니다.
             </div>
         </div>
         """, unsafe_allow_html=True)
+        # 버튼을 누르면 세션 스테이트의 page 값을 변경하고 새로고침하여 페이지 이동
+        if st.button("현황 분석하기 ➔", key="nav_dash", type="primary", use_container_width=True):
+            st.session_state.page = "📊 현황 대시보드"
+            st.rerun()
 
     with c2:
         st.markdown("""
@@ -214,11 +271,13 @@ if selected_page == "🏠 EV Seoul 소개 (INFO)":
             <div class="feature-icon">📍</div>
             <div class="feature-title">스마트 충전소 맵</div>
             <div class="feature-desc">
-                현재 위치 주변이나 원하는 자치구의 충전소를 빠르게 찾을 수 있습니다.
-                급속, 완속 등 충전기 타입과 운영시간을 확인하세요.
+                현재 위치 주변이나 원하는 자치구의 충전소를 빠르게 찾고, 급속/완속 여부 등 상세 정보를 확인하세요.
             </div>
         </div>
         """, unsafe_allow_html=True)
+        if st.button("충전소 찾기 ➔", key="nav_map", type="primary", use_container_width=True):
+            st.session_state.page = "📍 충전소 맵"
+            st.rerun()
 
     with c3:
         st.markdown("""
@@ -226,23 +285,39 @@ if selected_page == "🏠 EV Seoul 소개 (INFO)":
             <div class="feature-icon">💬</div>
             <div class="feature-title">자주 묻는 질문 (FAQ)</div>
             <div class="feature-desc">
-                전기차 보조금, 혜택, 충전기 이용 방법 등 
-                시민들이 가장 궁금해하는 핵심 정보들을 키워드로 쉽게 검색해 보세요.
+                전기차 보조금, 혜택, 충전기 이용 방법 등 시민들이 가장 궁금해하는 핵심 정보들을 키워드로 검색해 보세요.
             </div>
         </div>
         """, unsafe_allow_html=True)
+        if st.button("FAQ 바로가기 ➔", key="nav_faq", type="primary", use_container_width=True):
+            st.session_state.page = "💬 FAQ"
+            st.rerun()
 
-    # 하단 안내
+    # 5. [신규] 안내 섹션 (Why EV Seoul?)
     st.markdown("""
-    <div style="text-align: center; margin-top: 80px; padding-top: 40px; border-top: 1px solid var(--border);">
-        <p style="color: #64748b; font-size: 14px;">
-            👈 왼쪽 <b>사이드바 메뉴</b>에서 원하시는 기능을 선택하여 시작하세요!
-        </p>
+    <div style="margin-top: 80px; padding: 40px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 20px;">
+        <h3 style="font-family: 'Space Grotesk', sans-serif; color: #1e293b; margin-bottom: 20px; text-align: center;">💡 Why EV Seoul?</h3>
+        <div style="display: flex; gap: 30px; justify-content: space-around; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 200px; text-align: center;">
+                <div style="font-size: 24px; margin-bottom: 10px;">📈</div>
+                <h4 style="font-size: 16px; color: #334155;">데이터 기반의 인사이트</h4>
+                <p style="font-size: 13px; color: #64748b; line-height: 1.6;">국토교통부와 환경부의 검증된 공공데이터를 기반으로 정확한 서울시 모빌리티 현황을 파악합니다.</p>
+            </div>
+            <div style="flex: 1; min-width: 200px; text-align: center;">
+                <div style="font-size: 24px; margin-bottom: 10px;">⚡</div>
+                <h4 style="font-size: 16px; color: #334155;">충전 사각지대 해소</h4>
+                <p style="font-size: 13px; color: #64748b; line-height: 1.6;">누구나 쉽게 거주지 주변의 충전 인프라를 확인하여 전기차 진입 장벽을 낮춥니다.</p>
+            </div>
+            <div style="flex: 1; min-width: 200px; text-align: center;">
+                <div style="font-size: 24px; margin-bottom: 10px;">🌱</div>
+                <h4 style="font-size: 16px; color: #334155;">친환경 도시 실현</h4>
+                <p style="font-size: 13px; color: #64748b; line-height: 1.6;">지속 가능한 미래를 위해 내연기관차에서 친환경차로의 전환을 독려하고 정보를 제공합니다.</p>
+            </div>
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
-
     
 # ─────────────────────────────────────────────────────────────────────────────
 # PAGE 2 : 현황
@@ -337,18 +412,18 @@ elif st.session_state.page == "📊 현황 대시보드":
         st.markdown(f'<div class="section-title">📊 자치구별 현황 (막대 그래프)</div>', unsafe_allow_html=True)
 
         chart_data = filtered.groupby("시군구명")["등록대수"].sum().sort_values(ascending=False).reset_index()
-        st.bar_chart(chart_data, x="시군구명", y="등록대수", color="#2563eb", use_container_width=True, height=250)
+        st.bar_chart(chart_data, x="시군구명", y="등록대수", color="#2563eb", use_container_width=True, height=550)
 
         # [수정됨] 연료별 피벗 테이블 추가
-        st.markdown('<div class="section-title" style="margin-top:20px;">📋 친환경 연료별 상세 표</div>', unsafe_allow_html=True)
-        if not filtered.empty:
-            pivot = filtered.groupby(["시군구명", "연료명"])["등록대수"].sum().unstack(fill_value=0)
-            pivot["합계"] = pivot.sum(axis=1)
-            pivot = pivot.sort_values("합계", ascending=False)
-            pivot.index.name = "시군구명"
+        #st.markdown('<div class="section-title" style="margin-top:20px;">📋 친환경 연료별 상세 표</div>', unsafe_allow_html=True)
+       # if not filtered.empty:
+           # pivot = filtered.groupby(["시군구명", "연료명"])["등록대수"].sum().unstack(fill_value=0)
+          # pivot["합계"] = pivot.sum(axis=1)
+           # pivot = pivot.sort_values("합계", ascending=False)
+            #pivot.index.name = "시군구명"
 
-            styled = pivot.style.format("{:,.0f}").background_gradient(subset=["합계"], cmap="Blues").set_properties(**{'font-size': '13px'})
-            st.dataframe(styled, use_container_width=True, height=200)
+           # styled = pivot.style.format("{:,.0f}").background_gradient(subset=["합계"], cmap="Blues").set_properties(**{'font-size': '13px'})
+           # st.dataframe(styled, use_container_width=True, height=200)
 
     # KPI 카드
     st.markdown("<br>", unsafe_allow_html=True)
@@ -501,7 +576,7 @@ elif st.session_state.page == "📍 충전소 맵":
         st_folium(m2, width=None, height=560, use_container_width=True)
 
     with info_col:
-        st.markdown('<div class="section-title">📋 시설 요약</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">📋 해당 충전소의 종류별 충전기 수</div>', unsafe_allow_html=True)
         if len(filtered_c) > 0:
             summary_data = [
                 ("급속", int(filtered_c["fast_charger"].sum()), "#3b82f6", "#eff6ff", "#bfdbfe"),

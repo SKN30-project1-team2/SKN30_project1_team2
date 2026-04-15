@@ -26,8 +26,7 @@ for _ in range(4):
 
 	for faq in faqs:
 		question = faq.find_element(By.CSS_SELECTOR, '.faq_title .title').text.strip()
-
-		answer_el = faq.find_element(By.CSS_SELECTOR, '.faq_con')
+		
 		answer = faq.find_element(By.CSS_SELECTOR, '.faq_con').get_attribute("textContent")
 		answer = answer.replace('\xa0', ' ')
 		answer = " ".join(answer.split()[1:])

@@ -5,6 +5,8 @@ import pandas as pd
 import numpy as np
 import glob
 import os
+from collections import Counter
+from konlpy.tag import Okt
 
 # 서울 25개 자치구 중심 좌표 (충전소 및 지도 마커 기준점 제공용)
 DISTRICT_COORDS = {
@@ -101,6 +103,48 @@ def get_load_faq_data():
         })
     return faqs
 
+# faq keywords 뽑기 위한 함수
+def top_rate(top_n=5):
+    '''
+    csv 파일을 받아 questions 컬럼에 있는 값들 중 명사를 추출해,
+    가장 많이 나온 단어 상위 N개를 '리스트' 형태로 반환해주는 함수입니다.
+    '''
+    # 1. glob로 가져온 파일 경로 리스트를 순회하며 하나의 데이터프레임으로 합침 (에러 수정)
+    file_list = glob.glob(get_data_path("data_faq/*.csv"))
+    
+    if not file_list:
+        return []  # 파일이 없을 경우 빈 리스트 반환
+        
+    df_list = [pd.read_csv(f) for f in file_list]
+    df = pd.concat(df_list, ignore_index=True)
+
+    # 2. questions 컬럼 추출 (혹시 컬럼명이 question일 경우를 대비해 안전하게 처리)
+    col_name = 'questions' if 'questions' in df.columns else 'question'
+    if col_name not in df.columns:
+        return []
+        
+    # 결측치 제거 및 문자열 강제 변환
+    questions = df[col_name].dropna().astype(str)
+
+    # 3. 명사 추출
+    okt = Okt()
+    words = []
+    
+    for q in questions:
+        nouns = okt.nouns(q)  # 명사만 추출
+        words.extend(nouns)
+
+    # 4. 불용어 및 1글자 제거
+    stopwords = {'경우', '관련', '문의', '확인', '사용', '방법', '서울시', '가능', '얼마나', '이후', '하나요', '무엇', '대해'}
+    words = [w for w in words if len(w) > 1 and w not in stopwords]
+    
+    # 5. 빈도수 계산
+    word_counts = Counter(words)
+    
+    # 6. 상위 N개의 단어만 추출하여 리스트로 반환 (예: ['보조금', '충전소', '배터리'])
+    top_words_list = [word for word, count in word_counts.most_common(top_n)]
+    
+    return top_words_list
 
 # ── 하단의 차트를 위한 헬퍼 함수 ──────────────────────────────
 def get_ev_trend_data():

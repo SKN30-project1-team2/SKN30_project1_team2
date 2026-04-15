@@ -152,7 +152,7 @@ import sys
 
 from data.seoul_ev_data import (
     get_ev_data, get_charging_station_data, get_load_faq_data, 
-    get_ev_trend_data, get_ev_fuel_data  # 추가됨
+    get_ev_trend_data, get_ev_fuel_data, top_rate  # 추가됨
 )
 
 @st.cache_data
@@ -636,7 +636,7 @@ elif st.session_state.page == "💬 FAQ":
     with cat_col:
         category = st.radio("카테고리", ["전체", "전기차", "충전소"], horizontal=True, label_visibility="collapsed")
 
-    popular_keywords = ["보조금", "충전 요금", "배터리 수명", "급속충전", "세금 혜택", "아파트 충전기"]
+    popular_keywords = top_rate(5)
     st.markdown("<div style='font-size:13px;color:#64748b;margin-bottom:8px;font-weight:600;'>🔥 인기 검색어</div>", unsafe_allow_html=True)
     kw_cols = st.columns(len(popular_keywords))
     for i, kw in enumerate(popular_keywords):

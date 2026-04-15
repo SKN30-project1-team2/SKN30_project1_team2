@@ -112,17 +112,23 @@ def get_load_faq_data():
     df_list = []
     for file in file_list:
         df = pd.read_csv(file)
+        
+    # 카테고리 지정
+        if "charge" in file:
+            df["category"] = "충전소"
+        else:
+            df["category"] = "전기차"
+        
         df_list.append(df)
-
+        
     # 하나로 합치기
-    df_faq = pd.concat(df_list, ignore_index=True)
-    df_faq = df_faq.fillna("")
+    df_faq = pd.concat(df_list, ignore_index=True).fillna("")
 
     # 기존 구조에 맞게 변환
     faqs = []
     for _, row in df_faq.iterrows():
         faqs.append({
-            "category": "전기차",   # 일단 기본값 (원하면 나중에 컬럼 추가 가능)
+            "category": row["category"],  # 일단 기본값 (원하면 나중에 컬럼 추가 가능)
             "question": row["question"],
             "answer": row["answer"],
             "tags": []  # CSV에 없으니까 빈 리스트

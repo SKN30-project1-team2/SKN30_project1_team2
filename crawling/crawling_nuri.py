@@ -14,28 +14,30 @@ class Faq:
 	def to_dict(self):
 		return {'question':self.question, 'answer':self.answer}
 
-url = 'https://ev.or.kr/nportal/partcptn/initFaqAction.do#'
-
-driver = Chrome()
-driver.get(url)
-
-faq_list = []
-
-for _ in range(4):
+def crawling(faq_list):
 	faqs = driver.find_elements(By.CSS_SELECTOR, '.board_faq')
 
 	for faq in faqs:
 		question = faq.find_element(By.CSS_SELECTOR, '.faq_title .title').text.strip()
-		
+
 		answer = faq.find_element(By.CSS_SELECTOR, '.faq_con').get_attribute("textContent")
 		answer = answer.replace('\xa0', ' ')
 		answer = " ".join(answer.split()[1:])
 
 		faq_list.append(Faq(question, answer))
 
-	next_button = driver.find_element(By.CSS_SELECTOR, ".next.arrow")
-	next_button.click()
-	time.sleep(0.5)
+url = 'https://ev.or.kr/nportal/partcptn/initFaqAction.do#'
+
+driver = Chrome()
+driver.get(url)
+
+faq_list = []
+driver.find_element(By.ID, "2").click()
+time.sleep(0.5)
+crawling(faq_list)
+driver.find_element(By.ID, "1").click()
+time.sleep(0.5)
+crawling(faq_list)
 
 with open('csv/nuri.csv', mode='w', encoding='utf-8', newline='') as file:
     writer = csv.DictWriter(file, fieldnames=['question', 'answer'])

@@ -127,7 +127,7 @@ st.markdown("---")
 
 import sys
 sys.path.insert(0, "/home/claude/ev_app")
-from data.seoul_ev_data import get_ev_data, get_charging_station_data, FAQ_DATA
+from data.seoul_ev_data import get_ev_data, get_charging_station_data, get_load_faq_data
 
 @st.cache_data
 def load_data():
@@ -136,9 +136,13 @@ def load_data():
 @st.cache_data
 def load_charging():
     return get_charging_station_data()
+@st.cache_data
+def load_faq_data():
+    return get_load_faq_data()
 
 df        = load_data()
 df_charge = load_charging()
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PAGE 1 : 현황
@@ -399,10 +403,10 @@ elif st.session_state.page == "FAQ":
         with kw_cols[i]:
             if st.button(kw, key=f"kw_{i}", use_container_width=True):
                 search_query = kw
-
+    
     st.markdown("<br><hr style='border-color:#e2e8f0;'><br>", unsafe_allow_html=True)
-
-    faqs = FAQ_DATA
+    
+    faqs = load_faq_data()
     if category != "전체":
         faqs = [f for f in faqs if f["category"] == category]
     if search_query:
@@ -410,7 +414,7 @@ elif st.session_state.page == "FAQ":
         faqs = [f for f in faqs if (
             sq in f["question"].lower() or
             sq in f["answer"].lower() or
-            any(sq in t for t in f["tags"])
+            any(sq in t.lower() for t in f.get("tags", []))
         )]
 
     st.markdown(f'<div class="section-title" style="color:#3b82f6;">검색 결과 {len(faqs)}건</div>', unsafe_allow_html=True)

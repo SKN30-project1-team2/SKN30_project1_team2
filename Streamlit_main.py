@@ -2,7 +2,7 @@ import sys
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-
+import altair as alt
 import folium
 from folium import DivIcon
 from folium.plugins import MarkerCluster
@@ -137,14 +137,36 @@ with st.sidebar:
     
     pages = ["🏠 EV Seoul 소개 (INFO)", "📊 현황 대시보드", "📍 충전소 맵", "💬 FAQ"]
     
-    # 2. key="page"를 넣으면 st.session_state.page 와 자동으로 동기화됩니다.
-    # 복잡한 if문이나 st.rerun()이 전혀 필요 없습니다!
-    selected_page = st.selectbox(
-        "이동할 페이지를 선택하세요",
-        options=pages,
-        key="page"
-    )
-
+    PAGE_KEY = "page"
+ 
+# ── URL 쿼리 파라미터 → session_state 동기화 ──────────────────────────────
+# 새로고침 시 URL에 남아있는 ?page=현황 등을 읽어 session_state에 복원한다.
+params = st.query_params
+url_page = params.get(PAGE_KEY, None)
+ 
+if url_page in pages:
+    # URL에 유효한 페이지값이 있으면 그것을 우선 적용
+    st.session_state[PAGE_KEY] = url_page
+elif PAGE_KEY not in st.session_state:
+    # URL에도 없고 session_state도 없으면 기본값
+    st.session_state[PAGE_KEY] = pages[0]
+ 
+st.sidebar.markdown("## ⚡ 서울 EV 현황 시스템")
+selected_page = st.sidebar.selectbox(
+    "페이지 선택",
+    pages,
+    index=pages.index(st.session_state[PAGE_KEY]),
+)
+ 
+if selected_page != st.session_state[PAGE_KEY]:
+    st.session_state[PAGE_KEY] = selected_page
+    # 선택한 페이지를 URL 쿼리 파라미터에 저장 → 새로고침 후에도 유지
+    st.query_params[PAGE_KEY] = selected_page
+    st.rerun()
+ 
+# 최초 로드 시에도 현재 페이지를 URL에 기록
+st.query_params[PAGE_KEY] = st.session_state[PAGE_KEY]
+ 
 st.markdown("---")
 
 import sys
@@ -168,6 +190,7 @@ def load_faq_data():
 df        = load_data()
 df_charge = load_charging()
 district_df = pd.read_csv("data/data_set_seoul_districts.csv")
+keywords_top5 = top_rate("data/data_faq/data_set_faq.csv").most_common(5)
 # ─────────────────────────────────────────────────────────────────────────────
 # PAGE 1 : INFO (메인 소개 화면)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -245,7 +268,7 @@ if selected_page == "🏠 EV Seoul 소개 (INFO)":
     # 가장 최신 년도의 전기차 등록 대수 합계 구하기
     latest_year = sorted(df["기준년도"].unique())[-1]
     total_evs = int(df[df["기준년도"] == latest_year]["등록대수"].sum())
-    total_stations = len(df_charge)
+    total_stations = len(df_charge.dropna())
 
     st.markdown(f"""
     <div class="quick-stats-container">
@@ -263,7 +286,8 @@ if selected_page == "🏠 EV Seoul 소개 (INFO)":
 
     # [추가] 페이지 이동을 위한 콜백 함수 정의
     def change_page(page_name):
-        st.session_state.page = page_name
+        st.session_state[PAGE_KEY] = page_name
+        st.query_params[PAGE_KEY] = page_name
 
     # 4. 기능 카드 섹션 (HTML 레이아웃 + 콜백이 적용된 Streamlit 버튼)
     c1, c2, c3 = st.columns(3)
@@ -337,7 +361,7 @@ if selected_page == "🏠 EV Seoul 소개 (INFO)":
 # ─────────────────────────────────────────────────────────────────────────────
 # PAGE 2 : 현황 대시보드
 # ─────────────────────────────────────────────────────────────────────────────
-elif st.session_state.page == "📊 현황 대시보드":
+elif st.session_state[PAGE_KEY] == "📊 현황 대시보드":
     import folium
     from folium import DivIcon
     from streamlit_folium import st_folium
@@ -509,8 +533,39 @@ elif st.session_state.page == "📊 현황 대시보드":
         unsafe_allow_html=True
     )
 
+
         chart_data = filtered.groupby("시군구명")["등록대수"].sum().sort_values(ascending=False).reset_index()
-        st.bar_chart(chart_data, x="시군구명", y="등록대수", color="#2563eb", use_container_width=True, height=550)
+
+        bar_count = len(chart_data)
+        chart_width = max(600, bar_count * 45)  # 막대 수 × 45px, 최소 600px 보장
+        # 막대 두께 직접 지정 (단일 선택 시 더 얇게)
+        bar_width = max(8, min(25, chart_width // (bar_count * 2)))
+
+        chart = (
+            alt.Chart(chart_data)
+            .mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4, color="#2563eb")
+            .encode(
+                x=alt.X(
+                    "시군구명:N",
+                    sort="-y",
+                    axis=alt.Axis(
+                        labelAngle=-45,
+                        labelAlign="right",
+                        labelBaseline="top",
+                        labelFontSize=11,
+                        labelPadding=6,
+                        labelOverlap=False,   # ← 라벨 겹침 방지 (생략 없이 전부 표시)
+                        tickOffset=0,
+                    ),
+                    scale=alt.Scale(padding=0.3),
+                ),
+                y=alt.Y("등록대수:Q", axis=alt.Axis(labelFontSize=11)),
+                tooltip=["시군구명", "등록대수"],
+            )
+            .properties(height=550, width=550)  # ← 고정 너비로 라벨 공간 확보
+        )
+
+        st.altair_chart(chart, use_container_width=False)  # ← False로 변경, width 직접 제어
 
         # [수정됨] 연료별 피벗 테이블 추가
         #st.markdown('<div class="section-title" style="margin-top:20px;">📋 친환경 연료별 상세 표</div>', unsafe_allow_html=True)
@@ -572,7 +627,7 @@ elif st.session_state.page == "📊 현황 대시보드":
 # ─────────────────────────────────────────────────────────────────────────────
 # PAGE 3 : 충전소 맵
 # ─────────────────────────────────────────────────────────────────────────────
-elif st.session_state.page == "📍 충전소 맵":
+elif st.session_state[PAGE_KEY] == "📍 충전소 맵":
 
     st.markdown('<div class="page-content">', unsafe_allow_html=True)
     st.markdown("<h3 style='color:#1e293b;font-weight:800;margin-bottom:20px;'>📍 EV Seoul 충전소 인프라 현황</h3>", unsafe_allow_html=True)
@@ -686,7 +741,7 @@ elif st.session_state.page == "📍 충전소 맵":
                 """, unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown('<div class="section-title">상세 리스트</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">충전소 장소명 및 충전기 종류</div>', unsafe_allow_html=True)
         display_df = filtered_c[["station_name", "district_name", "fast_charger", "slow_charger"]].reset_index(drop=True)
         display_df.index = display_df.index + 1
         display_df.columns = ["장소명", "자치구", "급속", "완속"]
@@ -700,56 +755,158 @@ elif st.session_state.page == "📍 충전소 맵":
 # ─────────────────────────────────────────────────────────────────────────────
 # PAGE 4 : FAQ
 # ─────────────────────────────────────────────────────────────────────────────
-elif st.session_state.page == "💬 FAQ":
+elif st.session_state[PAGE_KEY] == "💬 FAQ":
     st.markdown('<div class="page-content">', unsafe_allow_html=True)
     st.markdown("<h3 style='color:#1e293b;font-weight:800;margin-bottom:20px;'>💬 EV Seoul 자주 묻는 질문(FAQ)</h3>", unsafe_allow_html=True)
+
+    # --- 1. 검색 버튼 & 입력창 전용 CSS ---
+    st.markdown("""
+    <style>
+        /* 검색창과 버튼의 높이를 통일하고 간격을 조절 */
+        div[data-testid="stColumn"] > div > div > div > div.stButton > button[key="faq_search_btn"] {
+            background-color: #3b82f6 !important;
+            color: white !important;
+            height: 43px !important;
+            margin-top: 0px !important; /* 위쪽 여백 제거 */
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+        }
+        /* 텍스트 입력창 높이 조절 */
+        div[data-baseweb="input"] {
+            height: 43px !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+    # -----아래 질문창 전용 CSS-------
+    st.markdown("""
+    <style>
+        /* 1. FAQ 질문 상자(Expander) 전체 디자인 */
+        div[data-testid="stExpander"] {
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 12px !important;
+            margin-bottom: 15px !important; /* 상자 사이의 간격 (두께감 형성) */
+            background-color: #ffffff !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02) !important;
+        }
+
+        /* 2. 질문 텍스트(Header) 스타일 - 두께 및 크기 조절 */
+        div[data-testid="stExpander"] summary p {
+            font-size: 18px !important;    /* 글자 크기 키움 */
+            font-weight: 700 !important;    /* 글자 아주 굵게 */
+            color: #1e293b !important;      /* 진한 색상 */
+            padding: 12px 0px !important;   /* 위아래 여백을 줘서 상자 두께 조절 */
+        }
+
+        /* 3. 상자가 열렸을 때 배경색 강조 (선택 사항) */
+        div[data-testid="stExpander"][aria-expanded="true"] {
+            border: 1.5px solid #3b82f6 !important; /* 열리면 파란 테두리 */
+            background-color: #f8fafc !important;
+        }
+
+        /* 4. 답변 내용 내부 여백 조절 */
+        div[data-testid="stExpander"] div[data-testid="stVerticalBlock"] {
+            padding: 20px !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # --- 2. 초기 세션 스테이트 설정 ---
+    if "search_query" not in st.session_state:
+        st.session_state.search_query = ""
+    if "faq_page" not in st.session_state:
+        st.session_state.faq_page = 1
+
+    # --- 3. 인기 검색어 버튼 배치 ---
+    st.markdown("<div style='font-size:13px;color:#64748b;margin-bottom:8px;font-weight:600;'>🔥 데이터 기반 인기 검색어</div>", unsafe_allow_html=True)
     
-    search_col, cat_col = st.columns([4, 2])
-    with search_col:
-        search_query = st.text_input(
-            "검색",
-            placeholder="🔍  궁금한 키워드를 입력하세요  (예: 보조금, 충전 요금, 배터리)",
+    kw_cols = st.columns(len(keywords_top5) + 1)
+    with kw_cols[0]:
+        if st.button("🔄 전체", use_container_width=True):
+            st.session_state.search_query = ""
+            st.session_state.faq_page = 1 # 검색어 초기화 시 페이지도 1로
+            st.rerun()
+
+    for i, kw in enumerate(keywords_top5):
+        with kw_cols[i+1]:
+            if st.button(f"{kw[0]}", key=f"kw_{i}", use_container_width=True):
+                st.session_state.search_query = kw[0]
+                st.session_state.faq_page = 1 # 키워드 변경 시 페이지도 1로
+                st.rerun()
+
+    # --- 4. 검색 입력창 및 검색하기 버튼 ---
+    col1, col2 = st.columns([8, 1.5])
+    with col1:
+        search_input = st.text_input(
+            "검색", 
+            value=st.session_state.search_query,
+            placeholder="🔍 키워드를 입력하거나 위 버튼을 클릭하세요", 
             label_visibility="collapsed"
         )
-    with cat_col:
-        category = st.radio("카테고리", ["전체", "전기차", "충전소"], horizontal=True, label_visibility="collapsed")
+    with col2:
+        # 검색하기 버튼 (CSS 적용을 위해 key 지정)
+        if st.button('검색하기', key="faq_search_btn", use_container_width=True):
+            st.session_state.search_query = search_input
+            st.session_state.faq_page = 1
+            st.rerun()
 
-    popular_keywords = top_rate(5)
-    st.markdown("<div style='font-size:13px;color:#64748b;margin-bottom:8px;font-weight:600;'>🔥 인기 검색어</div>", unsafe_allow_html=True)
-    kw_cols = st.columns(len(popular_keywords))
-    for i, kw in enumerate(popular_keywords):
-        with kw_cols[i]:
-            if st.button(kw, key=f"kw_{i}", use_container_width=True):
-                search_query = kw
-
-    st.markdown("<br><hr style='border-color:#e2e8f0;'><br>", unsafe_allow_html=True)
-    
+    # --- 5. 검색 필터링 로직 ---
     faqs = load_faq_data()
-    if category != "전체":
-        faqs = [f for f in faqs if f["category"] == category]
-    if search_query:
-        sq = search_query.lower()
+    final_query = st.session_state.search_query.lower()
+  
+    if final_query:
         faqs = [f for f in faqs if (
-            sq in f["question"].lower() or
-            sq in f["answer"].lower() or
-            any(sq in t.lower() for t in f.get("tags", []))
+            final_query in f["question"].lower() or
+            final_query in f["answer"].lower() or
+            any(final_query in t.lower() for t in f.get("tags", []))
         )]
 
-    st.markdown(f'<div class="section-title" style="color:#3b82f6;">검색 결과 {len(faqs)}건</div>', unsafe_allow_html=True)
+    # --- 6. 페이지네이션 계산 ---
+    items_per_page = 10
+    total_items = len(faqs)
+    total_pages = max((total_items // items_per_page) + (1 if total_items % items_per_page > 0 else 0), 1)
+    
+    # 현재 페이지에 보여줄 데이터 슬라이싱
+    start_idx = (st.session_state.faq_page - 1) * items_per_page
+    end_idx = start_idx + items_per_page
+    current_faqs = faqs[start_idx:end_idx]
 
-    if not faqs:
+    st.markdown(f'<div class="section-title" style="color:#3b82f6;">검색 결과 {total_items}건 (페이지 {st.session_state.faq_page}/{total_pages})</div>', unsafe_allow_html=True)
+
+    # --- 7. FAQ 리스트 출력 ---
+    if not current_faqs:
         st.info("검색 결과가 없습니다. 다른 키워드로 검색해보세요.")
     else:
-        for faq in faqs:
-            tag_class = "tag-ev" if faq["category"] == "전기차" else "tag-charge"
-            tags_html = "".join([f'<span class="faq-tag {tag_class}">{t}</span>' for t in faq["tags"]])
-            with st.expander(f"{'🚗' if faq['category']=='전기차' else '⚡'}  {faq['question']}"):
-                st.markdown(f"""
-                <div style="font-size:15px;line-height:1.7;color:#334155;padding:12px 4px">{faq['answer']}</div>
-                <div>{tags_html}</div>
-                """, unsafe_allow_html=True)
+        for faq in current_faqs:
+            with st.expander(f"Q.  {faq['question']}"):
+                st.markdown(
+                    f"<div style='font-size:15px;line-height:1.7;color:#334155;padding:12px 4px'>"
+                    f"{faq['answer']}</div>",
+                    unsafe_allow_html=True,
+                )
+
+    # --- 8. 페이지 이동 컨트롤 버튼 ---
+    st.markdown("<br>", unsafe_allow_html=True)
+    p_col1, p_col2, p_col3, p_col4, p_col5 = st.columns([2, 1, 2, 1, 2])
+    
+    with p_col2:
+        if st.button("이전", disabled=(st.session_state.faq_page == 1), use_container_width=True):
+            st.session_state.faq_page -= 1
+            st.rerun()
+            
+    with p_col3:
+        st.markdown(f"<p style='text-align: center; font-weight: bold; margin-top: 5px;'>{st.session_state.faq_page} / {total_pages}</p>", unsafe_allow_html=True)
+        
+    with p_col4:
+        if st.button("다음", disabled=(st.session_state.faq_page == total_pages), use_container_width=True):
+            st.session_state.faq_page += 1
+            st.rerun()
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("<br><br>", unsafe_allow_html=True)
+    
     st.markdown("""
     <div style="background:linear-gradient(135deg,#f0f9ff 0%,#e0f2fe 100%);
                 border:1px solid #bae6fd;border-radius:16px;padding:36px 32px;text-align:center;">

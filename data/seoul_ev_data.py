@@ -1,6 +1,7 @@
 """
 서울특별시 시군구별 전기자동차 및 충전소 실제 데이터 연동 모듈
 """
+import streamlit as st
 import pandas as pd
 import numpy as np
 import glob
@@ -71,54 +72,32 @@ def get_charging_station_data(csv_path="data/data_set_ev_charging_stations_new.c
     return df
 
 def get_load_faq_data():
-    """3. FAQ 데이터 로드"""
-    file_list = glob.glob(get_data_path("data_faq/*.csv"))
-    df_list = []
-    # df_faq = pd.read_csv(get_data_path("data_set_faq.csv"))
-
-    for file in file_list:
-        # FAQ 관련 파일만 로드 (가정: 파일명에 faq가 포함되거나, 컬럼에 question이 있는 경우)
-        if "faq" not in file.lower() and "질문" not in file:
-            continue
-            
-        try:
-            df = pd.read_csv(file)
-            if "question" in df.columns:
-                df["category"] = "충전소" if "charge" in file.lower() else "전기차"
-                df_list.append(df)
-        except Exception:
-            pass
-
-    if not df_list:
+    """FAQ 데이터 로드 - data_set_faq.csv 단일 파일"""
+    try:
+        df = pd.read_csv(get_data_path("data_faq/data_set_faq.csv"))
+    except Exception as e:
+        st.warning(f"FAQ 데이터를 불러오지 못했습니다: {e}")
         return []
 
-    df_faq = pd.concat(df_list, ignore_index=True).fillna("")
     faqs = []
-    for _, row in df_faq.iterrows():
+    for _, row in df.iterrows():
         faqs.append({
-            "category": row.get("category", "전기차"),
-            "question": row.get("question", ""),
-            "answer": row.get("answer", ""),
-            "tags": []
+            "faq_id": row.get("faq_id", ""),
+            "question": row.get("questions", ""),
+            "answer": row.get("answers", ""),
         })
     return faqs
-
+    
 # faq keywords 뽑기 위한 함수
 
-def top_rate(top_n=6):
+@st.cache_data
+def top_rate(csv_path):
     '''
-    csv 파일을 받아 questions 컬럼에 있는 값들 중 명사를 추출해,
-    가장 많이 나온 단어 상위 N개를 리스트 형태로 반환해주는 함수입니다.
+    csv 파일을 받아 questions 컬럼에 있는 값들 중 단어를 추출해 빈도를 묶어 반환해주는 함수입니다.
     '''
-    df = pd.read_csv(get_data_path("data_set_faq.csv"))
+    df = pd.read_csv(csv_path)
 
-    # 혹시 컬럼명이 'question' 일 수도 있으므로 에러 방지 처리
-    col_name = 'questions' if 'questions' in df.columns else 'question'
-    
-    if col_name not in df.columns:
-        return []
-        
-    questions = df[col_name].dropna().astype(str)
+    questions = df['questions'].dropna()
 
     kiwi = Kiwi()
     words = []
@@ -128,21 +107,16 @@ def top_rate(top_n=6):
 
         # 명사만 추출 (NNG: 일반명사, NNP: 고유명사)
         nouns = [t.form for t in tokens if t.tag in ['NNG', 'NNP']]
+
         words.extend(nouns)
 
-    # 불용어(Stopwords) 추가
-    stopwords = {'경우', '관련', '문의', '확인', '사용', '방법', '서울시', '가능', '얼마나', '이후', '하나요', '무엇', '대해'}
+    stopwords = {'경우', '관련', '문의', '확인', '사용', '방법', '서울시', '가능', '얼마나', '이후', '하나요'}
 
     # 한 글자 제거 + stopwords 제거
     words = [w for w in words if len(w) > 1 and w not in stopwords]
 
     count_words = Counter(words)
-    
-    # 🌟 핵심: 상위 top_n개의 단어만 추출하여 리스트로 변환
-    # count_words.most_common(top_n) 은 [('보조금', 15), ('충전기', 10)] 형태이므로 단어만 뽑아냅니다.
-    top_words_list = [word for word, count in count_words.most_common(top_n)]
-    
-    return top_words_list
+    return count_words
 
 # ── 하단의 차트를 위한 헬퍼 함수 ──────────────────────────────
 def get_ev_trend_data():

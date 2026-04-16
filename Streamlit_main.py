@@ -359,7 +359,36 @@ elif st.session_state.page == "📊 현황 대시보드":
         with f3:
             # 선택된 년도의 서울시 전체 등록대수 미리보기
             year_total = df[df["기준년도"] == selected_year]["등록대수"].sum()
-            st.metric(f"{selected_year} 전기차 총 등록대수", f"{int(year_total):,}대")
+            # st.metric(f"{selected_year} 전기차 총 등록대수", f"{int(year_total):,}대")
+            st.markdown(f"""
+        <div style="
+            background: #f8fafc; 
+            border: 1px solid #bfdbfe; 
+            border-radius: 12px; 
+            padding: 12px 16px; 
+            text-align: left;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        ">
+        <div style="
+            font-size: 13px; 
+            color: #64748b; 
+            font-weight: 700; 
+            margin-bottom: 4px;
+            letter-spacing: -0.5px;
+        ">
+            {selected_year} 전기차 총 등록대수
+        </div>
+        <div style="
+            font-family: 'Space Grotesk', sans-serif; 
+            font-size: 26px; 
+            font-weight: 900; 
+            color: #2563eb; 
+            letter-spacing: -1px;
+        ">
+            {int(year_total):,} <span style="font-size:16px; color:#3b82f6; font-weight:600; font-family:'Noto Sans KR', sans-serif;">대</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     # 필터 적용 (선택된 하나의 '년도' 데이터만 남김)
     filtered = df[df["기준년도"] == selected_year].copy()
@@ -368,11 +397,63 @@ elif st.session_state.page == "📊 현황 대시보드":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
+    # KPI 카드 영역
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="section-title" style="font-size: 18px; color: #1e3a8a; font-weight: 800; border-bottom: 2px solid #bfdbfe; padding-bottom: 8px;">'
+        f'📈 {selected_year} 주요 지표'
+        f'</div>', 
+        unsafe_allow_html=True
+    )
+
+    # 1. 친환경차 데이터(filtered) 기준 지표
+    total        = filtered["등록대수"].sum()
+    top_district = filtered.groupby("시군구명")["등록대수"].sum().idxmax() if not filtered.empty else "-"
+    top_count    = filtered.groupby("시군구명")["등록대수"].sum().max() if not filtered.empty else 0
+    avg          = int(filtered.groupby("시군구명")["등록대수"].sum().mean()) if not filtered.empty else 0
+    
+    # 2. 순수 전기차 총합 계산
+    ev_total     = filtered[filtered["연료명"].str.contains("전기", na=False)]["등록대수"].sum()
+
+    # 3. [핵심 수정] 서울시 전체 자동차(내연기관 포함) 총합 가져오기
+    try:
+        # year_amount.csv 원본을 읽어와 선택된 연도의 모든 차량 대수 합산
+        raw_df = pd.read_csv("data/year_amount.csv")
+        target_year = int(selected_year.replace("년", "")) # '2023년' -> 2023
+        all_vehicles_total = raw_df[raw_df["reg_year"] == target_year]["total_amount"].sum()
+    except Exception:
+        all_vehicles_total = total # 만약 파일 읽기 실패 시 친환경차 총합을 임시로 사용
+
+    # 전체 자동차 대비 전기차 보급률 계산 (소수점 2자리)
+    ratio = (ev_total / all_vehicles_total) * 100 if all_vehicles_total > 0 else 0
+
+    k1, k2, k3, k4 = st.columns(4)
+    with k1:
+        st.markdown(f'<div class="kpi-card"><div class="kpi-label">전기차 등록대수</div><div class="kpi-value">{total:,}</div><div class="kpi-sub">선택 년도 누적기준</div></div>', unsafe_allow_html=True)
+    with k2:
+        st.markdown(f'<div class="kpi-card"><div class="kpi-label">최다 등록 자치구</div><div class="kpi-value">{top_district}</div><div class="kpi-sub">{top_count:,}대</div></div>', unsafe_allow_html=True)
+    with k3:
+        st.markdown(f'<div class="kpi-card"><div class="kpi-label">자치구 평균</div><div class="kpi-value">{avg:,}</div><div class="kpi-sub">25개 자치구 기준</div></div>', unsafe_allow_html=True)
+    with k4:
+        # 비율이 작을 것이므로 소수점 2자리(.2f)로 표시하여 증감을 명확히 보여줍니다.
+        st.markdown(f'<div class="kpi-card"><div class="kpi-label">전체 차량 대비 전기차</div><div class="kpi-value">{ratio:.2f}%</div><div class="kpi-sub">서울시 전체 내연기관 포함</div></div>', unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
     # 지도 + 표
     map_col, table_col = st.columns([5, 4], gap="large")
 
     with map_col:
-        st.markdown(f'<div class="section-title">📍 {selected_year} 지역별 등록 현황 지도</div>', unsafe_allow_html=True)
+        # 기존 코드
+    # st.markdown(f'<div class="section-title">📍 {selected_year} 지역별 등록 현황 지도</div>', unsafe_allow_html=True)
+
+    # 수정된 코드 (크기 키우고 색상 및 스타일 변경)
+        st.markdown(
+        f'<div class="section-title" style="font-size: 18px; color: #1e3a8a; font-weight: 800; border-bottom: 2px solid #bfdbfe; padding-bottom: 8px;">'
+        f'📍 {selected_year} 지역별 등록 현황 지도'
+        f'</div>', 
+        unsafe_allow_html=True
+    )
 
         m = folium.Map(location=[37.5665, 126.9780], zoom_start=11, tiles="CartoDB Positron")
 
@@ -421,7 +502,12 @@ elif st.session_state.page == "📊 현황 대시보드":
         st_folium(m, width=None, height=500, use_container_width=True)
 
     with table_col:
-        st.markdown(f'<div class="section-title">📊 자치구별 현황 (막대 그래프)</div>', unsafe_allow_html=True)
+        st.markdown(
+        f'<div class="section-title" style="font-size: 18px; color: #1e3a8a; font-weight: 800; border-bottom: 2px solid #bfdbfe; padding-bottom: 8px;">'
+        f'📊 자치구별 현황 (막대 그래프)'
+        f'</div>', 
+        unsafe_allow_html=True
+    )
 
         chart_data = filtered.groupby("시군구명")["등록대수"].sum().sort_values(ascending=False).reset_index()
         st.bar_chart(chart_data, x="시군구명", y="등록대수", color="#2563eb", use_container_width=True, height=550)
@@ -437,38 +523,20 @@ elif st.session_state.page == "📊 현황 대시보드":
            # styled = pivot.style.format("{:,.0f}").background_gradient(subset=["합계"], cmap="Blues").set_properties(**{'font-size': '13px'})
            # st.dataframe(styled, use_container_width=True, height=200)
 
-    # KPI 카드
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown(f'<div class="section-title">📈 {selected_year} 주요 지표</div>', unsafe_allow_html=True)
 
-    # 'filtered' 데이터프레임에는 이미 선택된 년도 데이터만 존재함!
-    total        = filtered["등록대수"].sum()
-    top_district = filtered.groupby("시군구명")["등록대수"].sum().idxmax() if not filtered.empty else "-"
-    top_count    = filtered.groupby("시군구명")["등록대수"].sum().max() if not filtered.empty else 0
-    avg          = int(filtered.groupby("시군구명")["등록대수"].sum().mean()) if not filtered.empty else 0
-    
-    # 전기차 비중 계산 (연료명에 '전기'가 포함된 경우)
-    ev_total     = filtered[filtered["연료명"].str.contains("전기", na=False)]["등록대수"].sum()
-    ratio        = int((ev_total / total) * 100) if total > 0 else 0
-
-    k1, k2, k3, k4 = st.columns(4)
-    with k1:
-        st.markdown(f'<div class="kpi-card"><div class="kpi-label">전체 등록대수</div><div class="kpi-value">{total:,}</div><div class="kpi-sub">선택 년도 누적기준</div></div>', unsafe_allow_html=True)
-    with k2:
-        st.markdown(f'<div class="kpi-card"><div class="kpi-label">최다 등록 자치구</div><div class="kpi-value">{top_district}</div><div class="kpi-sub">{top_count:,}대</div></div>', unsafe_allow_html=True)
-    with k3:
-        st.markdown(f'<div class="kpi-card"><div class="kpi-label">자치구 평균</div><div class="kpi-value">{avg:,}</div><div class="kpi-sub">25개 자치구 기준</div></div>', unsafe_allow_html=True)
-    with k4:
-        st.markdown(f'<div class="kpi-card"><div class="kpi-label">순수 전기차(EV) 비중</div><div class="kpi-value">{ratio}%</div><div class="kpi-sub">친환경차 중 전기차 비율</div></div>', unsafe_allow_html=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)
 
     # ── [추가] 년도별 추이 및 연료별 비중 섹션 ──────────────────────────────────
     st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("---------------------", unsafe_allow_html=True)
     trend_col, donut_col = st.columns([5, 4], gap="large")
 
     with trend_col:
-        st.markdown('<div class="section-title">📈 년도별 전기차 증가 추이</div>', unsafe_allow_html=True)
+        st.markdown(
+        f'<div class="section-title" style="font-size: 18px; color: #1e3a8a; font-weight: 800; border-bottom: 2px solid #bfdbfe; padding-bottom: 8px;">'
+        f'📈 년도별 전기차 증가 추이'
+        f'</div>', 
+        unsafe_allow_html=True
+    )
         
         yearly_trend = get_ev_trend_data() # 함수 연동 (파일 직접 읽기 x)
         
@@ -479,7 +547,12 @@ elif st.session_state.page == "📊 현황 대시보드":
         )
 
     with donut_col:
-        st.markdown('<div class="section-title">🍩 연료별 자동차 등록 비중</div>', unsafe_allow_html=True)
+        st.markdown(
+        f'<div class="section-title" style="font-size: 18px; color: #1e3a8a; font-weight: 800; border-bottom: 2px solid #bfdbfe; padding-bottom: 8px;">'
+        f'🍩 연료별 자동차 등록 비중'
+        f'</div>', 
+        unsafe_allow_html=True
+    )
         
         import plotly.express as px
         
@@ -539,7 +612,7 @@ elif st.session_state.page == "📍 충전소 맵":
             center_lat = filtered_c["lat"].mean()
             center_lon = filtered_c["lon"].mean()
             zoom = 13
-
+        
         m2 = folium.Map(location=[center_lat, center_lon], zoom_start=zoom, tiles="CartoDB Positron")
         cluster = MarkerCluster(options={"maxClusterRadius": 50, "spiderfyOnMaxZoom": True}).add_to(m2)
 
@@ -588,7 +661,12 @@ elif st.session_state.page == "📍 충전소 맵":
         st_folium(m2, width=None, height=560, use_container_width=True)
 
     with info_col:
-        st.markdown('<div class="section-title">📋 해당 충전소의 종류별 충전기 수</div>', unsafe_allow_html=True)
+        st.markdown(
+        f'<div class="section-title" style="font-size: 18px; color: #1e3a8a; font-weight: 800; border-bottom: 2px solid #bfdbfe; padding-bottom: 8px;">'
+        f'📋 해당 충전소의 종류별 충전기 수'
+        f'</div>', 
+        unsafe_allow_html=True
+    )
         if len(filtered_c) > 0:
             summary_data = [
                 ("급속", int(filtered_c["fast_charger"].sum()), "#3b82f6", "#eff6ff", "#bfdbfe"),

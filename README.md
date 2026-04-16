@@ -37,11 +37,11 @@
 
 <img src="./assets/preview.png" width="80%">
 <br>
-<img src="./assets/page2.gif" width="80%">
+<img src="./assets/page2.gif" width="50%">
 <br>
-<img src="./assets/page3.gif" width="80%">
+<img src="./assets/page3.gif" width="50%">
 <br>
-<img src="./assets/page4.gif" width="80%">
+<img src="./assets/page4.gif" width="50%">
 
 
 

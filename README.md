@@ -17,12 +17,12 @@ https://evseoul.streamlit.app/
 <br>
 
 ## 1. Team Route 👥
-### 누가 무엇을 했는지 구조화
+## 📌 누가 무엇을 했는지 구조화
 
 </p>
 
 | 이름 | 역할 | 담당 분석 및 업무 |
-|------|------|------------------|
+| :----- | :----- | :----- |
 | **박제섭** | **PM** | 기획 / FAQ 데이터 수집·전처리 / 텍스트 분석 / 위치 데이터 가공 |
 | **박지유** | **Data Engineering** | 데이터 수집 및 전처리 / 충전소 등록 데이터 가공 / DB 모델링 및 아키텍처 설계 / DB 구축 및 운영 관리 / 회의록 관리 |
 | **박세빈** | **Data Engineering** | 데이터 수집 및 전처리 / 자동차 등록 데이터 가공 / DB 모델링 및 아키텍처 설계 / DB 구축 및 운영 관리 |
@@ -37,21 +37,18 @@ https://evseoul.streamlit.app/
 
 ## 2. Visualization Preview 🖼️
 
-### 📖 개요
-EV Seoul 플랫폼의 목적과 핵심 기능을 한눈에 보여주는 메인 랜딩 페이지입니다. 사용자는 서비스의 방향성과 제공되는 데이터 기능을 직관적으로 이해할 수 있습니다.
 
----
+<img src="./assets/preview.png" width="80%">
+<br>
+<img src="./assets/page2.gif" width="80%">
+<br>
+<img src="./assets/page3.gif" width="80%">
+<br>
+<img src="./assets/page4.gif" width="80%">
 
-### 📊 서비스 주요 기능 상세
 
-| 시각화 자료 | 기능 설명 |
-| :--- | :--- |
-| <img src="./assets/preview.png" width="500px"> | **1. 메인 랜딩 페이지** <br><br> • 서비스의 목적과 핵심 가치 전달 <br> • 전체 데이터 현황 요약 제공 |
-| <img src="./assets/page2.gif" width="500px"> | **2. 현황 대시보드** <br><br> **[주요 기능]** <br> 1) 필터 기능 및 KPI 지표 제공 <br> 2) 지도 시각화 (Folium) <br> 3) 막대 그래프 (Altair) <br> 4) 연도별 전기차 증가 추이 (Line Chart) <br> 5) 연료별 비중 분석 (도넛 차트) |
-| <img src="./assets/page3.gif" width="500px"> | **3. 충전소 맵** <br><br> **[주요 기능]** <br> • 지도 기반 충전소 탐색 <br> • 충전소 밀집 지역 자동 클러스터링 <br> • 상세 충전소 정보 팝업 제공 |
-| <img src="./assets/page4.gif" width="500px"> | **4. FAQ (자주 묻는 질문)** <br><br> **[주요 기능]** <br> 1) 키워드 검색 기능 <br> 2) 인기 검색어 추천 및 태그 제공 |
 
----
+<br>
 
 ---
 

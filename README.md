@@ -8,6 +8,9 @@
 > **핵심 목표**: 공공 데이터를 활용해 충전소 데이터를 수집·가공하고, 지도 기반 시각화와 데이터 분석 기능을 통해 사용자가 효율적인 이동 및 충전 계획을 세울 수 있도록 돕는 것을 목표로 합니다.
 <br>
 
+## ⚡ Streamlit Cloud 주소 <br>
+https://evseoul.streamlit.app/
+<br>
 ---
 
 
@@ -34,16 +37,41 @@
 
 ## 2. Visualization Preview 🖼️
 
-
+## INFO
 <img src="./assets/preview.png" width="50%">
+📖 개요<br>
+EV Seoul 플랫폼의 목적과 핵심 기능을 한눈에 보여주는 메인 랜딩 페이지입니다.<br>
+사용자는 서비스의 방향성과 제공되는 데이터 기능을 직관적으로 이해할 수 있습니다.   
+
 <br>
+
+## 전기차 등록 현황 시각화
 <img src="./assets/page2.gif" width="50%">
+📊 2. 현황 대시보드<br>
+🔍 주요 기능<br>
+1) 필터 기능<br>
+2) KPI 지표 제공<br>
+3) 지도 시각화 (Folium)<br>
+4) 막대 그래프 (Altair)<br>
+5) 트렌드 분석<br>
+연도별 전기차 증가 추이 (Line Chart)<br>
+6) 연료별 비중 분석<br>
+전체 차량 대비 연료 종류 비율 (도넛 차트)
 <br>
+
+## 충전소 위치 정보
 <img src="./assets/page3.gif" width="50%">
+📍 3. 충전소 맵<br>
+지도 기반 충전소 탐색<br>
+충전소 밀집 지역 자동 클러스터링<br>
+충전소 정보 제공<br>
 <br>
+
+## 전기차 관련 FAQ
 <img src="./assets/page4.gif" width="50%">
-
-
+💬 4. FAQ (자주 묻는 질문)<br>
+1) 키워드 검색<br>
+2) 인기 검색어 추천<br>
 
 <br>
 

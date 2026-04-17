@@ -71,13 +71,16 @@ https://evseoul.streamlit.app/
 ## 2. Visualization Preview 🖼️
 
 
-<img src="./assets/preview.png" width="80%">
-<br>
-<img src="./assets/page2.gif" width="80%">
-<br>
-<img src="./assets/page3.gif" width="80%">
-<br>
-<img src="./assets/page4.gif" width="80%">
+### 📊 서비스 주요 기능 상세
+
+| 시각화 자료 | 기능 설명 |
+| :--- | :--- |
+| <img src="./assets/preview.png" width="500px"> | **1. 메인 랜딩 페이지** <br><br> • 서비스의 목적과 핵심 가치 전달 <br> • 전체 데이터 현황 요약 제공 |
+| <img src="./assets/page2.gif" width="500px"> | **2. 현황 대시보드** <br><br> **[주요 기능]** <br> 1) 필터 기능 및 KPI 지표 제공 <br> 2) 지도 시각화 (Folium) <br> 3) 막대 그래프 (Altair) <br> 4) 연도별 전기차 증가 추이 (Line Chart) <br> 5) 연료별 비중 분석 (도넛 차트) |
+| <img src="./assets/page3.gif" width="500px"> | **3. 충전소 맵** <br><br> **[주요 기능]** <br> • 지도 기반 충전소 탐색 <br> • 충전소 밀집 지역 자동 클러스터링 <br> • 상세 충전소 정보 팝업 제공 |
+| <img src="./assets/page4.gif" width="500px"> | **4. FAQ (자주 묻는 질문)** <br><br> **[주요 기능]** <br> 1) 키워드 검색 기능 <br> 2) 인기 검색어 추천 및 태그 제공 |
+
+---
 
 
 
